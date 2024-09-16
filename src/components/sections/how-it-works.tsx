@@ -32,7 +32,7 @@ const data = [
 export default function Component() {
   return (
     <Section title="How it works" subtitle="Just 3 steps to get started">
-      <Features data={data} collapseDelay={2000} />
+      <Features data={data} collapseDelay={5000} linePosition="left" />
     </Section>
   );
 }

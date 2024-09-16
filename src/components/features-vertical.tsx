@@ -1,7 +1,18 @@
 "use client";
 
 import * as Accordion from "@radix-ui/react-accordion";
-import { AnimatePresence, motion, useInView } from "framer-motion";
+import {
+  animate,
+  AnimatePresence,
+  AnimationPlaybackControls,
+  motion,
+  useInView,
+  useMotionTemplate,
+  useMotionValue,
+  useTransform,
+  useSpring,
+  useMotionValueEvent,
+} from "framer-motion";
 import React, {
   forwardRef,
   ReactNode,
@@ -22,7 +33,7 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
   ({ children, className, ...props }, forwardedRef) => (
     <Accordion.Item
       className={cn(
-        "mt-px overflow-hidden focus-within:relative focus-within:z-10",
+        "mt-px focus-within:relative focus-within:z-10",
         className
       )}
       {...props}
@@ -103,12 +114,31 @@ export default function Features({
   const [direction, setDirection] = useState<number>(1);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
   const carouselTransitionDuration = 600;
-  // const carouselRef = useRef<HTMLUListElement>(null);
+  const controlsRef = useRef<AnimationPlaybackControls | null>(null);
+  const progress = useMotionValue(0);
+  const progressHeight = useTransform(progress, [0, 100], ["0%", "105%"]);
+  const progressWidth = useTransform(progress, [0, 100], ["0%", "105%"]);
   const ref = useRef(null);
+
+  useEffect(() => {
+    const controls = animate(progress, 100, {
+      duration: collapseDelay / 1000,
+      ease: "linear",
+      repeat: Infinity,
+    });
+
+    controlsRef.current = controls;
+  }, [collapseDelay]);
+
   const isInView = useInView(ref, {
     once: true,
     amount: 0.5,
   });
+
+  // useMotionValueEvent(progress, "change", (latest) => {
+  //   console.log("latest", latest);
+  //   console.log("progressWidth", progressWidth);
+  // });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -122,16 +152,26 @@ export default function Features({
     return () => clearTimeout(timer);
   }, [isInView]);
 
-  // interval for changing images
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) =>
-        prevIndex !== undefined ? (prevIndex + 1) % data.length : 0
-      );
-    }, collapseDelay);
+  const [isAnimationCompleting, setIsAnimationCompleting] = useState(false);
 
-    return () => clearInterval(timer);
-  }, [currentIndex, data.length, collapseDelay]);
+  useMotionValueEvent(progress, "change", (latest) => {
+    if (latest > 99 && !isAnimationCompleting) {
+      setIsAnimationCompleting(true);
+
+      setTimeout(() => {
+        controlsRef.current?.complete();
+        controlsRef.current?.play();
+
+        setCurrentIndex((prevIndex) =>
+          prevIndex !== undefined ? (prevIndex + 1) % data.length : 0
+        );
+
+        setTimeout(() => {
+          setIsAnimationCompleting(false);
+        }, 50);
+      }, 0);
+    }
+  });
 
   const handleAccordionChange = useCallback(
     (value: string) => {
@@ -141,6 +181,8 @@ export default function Features({
       setDirection(newIndex > currentIndex ? 1 : -1);
       setCurrentIndex(newIndex);
       setIsTransitioning(true);
+      controlsRef.current?.complete();
+      controlsRef.current?.play();
 
       setTimeout(() => {
         setIsTransitioning(false);
@@ -231,39 +273,33 @@ export default function Features({
                             : "left-0 right-auto"
                         }`}
                       >
-                        <div
-                          className={`absolute left-0 top-0 w-full ${
-                            currentIndex === index ? "h-full" : "h-0"
-                          } origin-top bg-primary transition-all ease-linear dark:bg-white`}
+                        {currentIndex === index ? (
+                          <motion.div
+                            initial={{ height: "0%" }}
+                          className={`absolute left-0 top-0 w-full origin-top bg-primary transition-all ease-linear dark:bg-white`}
                           style={{
-                            transitionDuration:
-                              currentIndex === index
-                                ? `${collapseDelay}ms`
-                                : "0s",
-                          }}
-                        ></div>
+                            height: progressHeight,
+                            }}
+                          ></motion.div>
+                        ) : null}
                       </div>
                     ) : null}
 
                     {linePosition === "top" || linePosition === "bottom" ? (
                       <div
                         className={`absolute left-0 right-0 w-full h-0.5 overflow-hidden rounded-lg bg-neutral-300/50 dark:bg-neutral-300/30 ${
-                          linePosition === "bottom" ? "bottom-0" : "top-0"
+                          linePosition === "bottom" ? "-bottom-4" : "-top-4"
                         }`}
                       >
-                        <div
-                          className={`absolute left-0 ${
-                            linePosition === "bottom" ? "bottom-0" : "top-0"
-                          } h-full ${
-                            currentIndex === index ? "w-full" : "w-0"
-                          } origin-left bg-primary transition-all ease-linear dark:bg-white`}
-                          style={{
-                            transitionDuration:
-                              currentIndex === index
-                                ? `${collapseDelay}ms`
-                                : "0s",
-                          }}
-                        ></div>
+                        {currentIndex === index ? (
+                          <motion.div
+                            initial={{ width: "0%" }}
+                            className={`absolute left-0 ${
+                              linePosition === "bottom" ? "bottom-0" : "top-0"
+                            } h-full origin-left bg-primary transition-all ease-linear dark:bg-white`}
+                            style={{ width: progressWidth }}
+                          ></motion.div>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -291,13 +327,11 @@ export default function Features({
                 ltr && "lg:order-1"
               }`}
             >
-              <AnimatePresence
-                mode="popLayout"
-                initial={false}
-                custom={direction}
-              >
+              <AnimatePresence mode="popLayout" custom={direction}>
                 {data[currentIndex]?.image ? (
                   <motion.img
+                    onMouseEnter={() => controlsRef.current?.pause()}
+                    onMouseLeave={() => controlsRef.current?.play()}
                     key={currentIndex}
                     src={data[currentIndex].image}
                     alt="feature"

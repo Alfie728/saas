@@ -35,7 +35,7 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
   ({ children, className, ...props }, forwardedRef) => (
     <Accordion.Item
       className={cn(
-        "mt-px  focus-within:relative focus-within:z-10",
+        "mt-px focus-within:relative focus-within:z-10",
         className
       )}
       {...props}
@@ -116,10 +116,12 @@ export default function Features({
   const carouselTransitionDuration = 800;
 
   const progress = useMotionValue(0);
-  useMotionValueEvent(progress, "animationComplete", () => {
-    console.log("animationComplete");
-  });
   const progressWidth = useTransform(progress, [0, 100], ["0%", "105%"]);
+  const progressHeight = useTransform(progress, [0, 100], ["0%", "105%"]);
+  // useMotionValueEvent(progress, "change", (latest) => {
+  //   console.log("latest", latest);
+  //   console.log("progressWidth", progressWidth);
+  // });
   // const carouselRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -282,28 +284,26 @@ export default function Features({
                       <div
                         className={`absolute bottom-0 top-0 h-full w-0.5 overflow-hidden rounded-lg bg-neutral-300/50 dark:bg-neutral-300/30 ${
                           linePosition === "right"
-                            ? "left-auto right-0"
-                            : "left-0 right-auto"
+                            ? "left-auto -right-4"
+                            : "-left-4 right-auto"
                         }`}
                       >
-                        <div
-                          className={`absolute left-0 top-0 w-full ${
-                            currentIndex === index ? "h-full" : "h-0"
-                          } origin-top bg-primary transition-all ease-linear dark:bg-white`}
-                          style={{
-                            transitionDuration:
-                              currentIndex === index
-                                ? `${collapseDelay}ms`
-                                : "0s",
-                          }}
-                        ></div>
+                        {currentIndex === index ? (
+                          <motion.div
+                            initial={{ height: "0%" }}
+                            className={`absolute left-0 top-0 w-full origin-top bg-primary transition-all ease-linear dark:bg-white`}
+                            style={{
+                              height: progressHeight,
+                            }}
+                          ></motion.div>
+                        ) : null}
                       </div>
                     ) : null}
 
                     {linePosition === "top" || linePosition === "bottom" ? (
                       <div
                         className={`absolute left-0 right-0 w-full h-0.5 overflow-hidden rounded-lg bg-neutral-300/50 dark:bg-neutral-300/30 ${
-                          linePosition === "bottom" ? "bottom-0" : "top-0"
+                          linePosition === "bottom" ? "bottom-0" : "-top-4"
                         }`}
                       >
                         {currentIndex === index ? (
