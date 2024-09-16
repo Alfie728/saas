@@ -2,7 +2,18 @@
 
 import { BorderBeam } from "@/components/magicui/border-beam";
 import * as Accordion from "@radix-ui/react-accordion";
-import { AnimatePresence, motion, useInView } from "framer-motion";
+import {
+  animate,
+  AnimatePresence,
+  AnimationPlaybackControls,
+  motion,
+  useInView,
+  useMotionTemplate,
+  useMotionValue,
+  useTransform,
+  useSpring,
+  useMotionValueEvent,
+} from "framer-motion";
 import React, {
   forwardRef,
   ReactNode,
@@ -100,10 +111,26 @@ export default function Features({
 }: FeaturesProps) {
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   const [direction, setDirection] = useState<number>(1);
+  const controlsRef = useRef<AnimationPlaybackControls | null>(null);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
   const carouselTransitionDuration = 800;
 
+  const progress = useMotionValue(0);
+  useMotionValueEvent(progress, "change", (latestValue) => {
+    console.log(latestValue);
+  });
+  const progressWidth = useTransform(progress, [0, 100], ["0%", "100%"]);
   // const carouselRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    const controls = animate(progress, 100, {
+      duration: collapseDelay / 1000,
+      ease: "linear",
+      repeat: Infinity,
+    });
+
+    controlsRef.current = controls;
+  }, []);
 
   const ref = useRef(null);
   const isInView = useInView(ref, {
@@ -123,17 +150,39 @@ export default function Features({
     return () => clearTimeout(timer);
   }, [isInView]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) =>
-        prevIndex !== undefined ? (prevIndex + 1) % data.length : 0
-      );
-    }, collapseDelay);
+  const [isAnimationCompleting, setIsAnimationCompleting] = useState(false);
 
-    return () => {
-      clearInterval(timer);
-    };
-  }, [currentIndex, data.length, collapseDelay]);
+  useMotionValueEvent(progress, "change", (latest) => {
+    if (latest > 99 && !isAnimationCompleting) {
+      setIsAnimationCompleting(true);
+      console.log("animationComplete");
+
+      // Use setTimeout to ensure this runs after the current call stack is cleared
+      setTimeout(() => {
+        progress.set(0);
+        setCurrentIndex((prevIndex) =>
+          prevIndex !== undefined ? (prevIndex + 1) % data.length : 0
+        );
+
+        // Reset the flag after a short delay to prepare for the next cycle
+        setTimeout(() => {
+          setIsAnimationCompleting(false);
+        }, 50);
+      }, 0);
+    }
+  });
+
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setCurrentIndex((prevIndex) =>
+  //       prevIndex !== undefined ? (prevIndex + 1) % data.length : 0
+  //     );
+  //   }, collapseDelay);
+
+  //   return () => {
+  //     clearInterval(timer);
+  //   };
+  // }, [currentIndex, data.length, collapseDelay]);
 
   const handleAccordionChange = useCallback(
     (value: string) => {
@@ -143,6 +192,8 @@ export default function Features({
       setDirection(newIndex > currentIndex ? 1 : -1);
       setCurrentIndex(newIndex);
       setIsTransitioning(true);
+      controlsRef.current?.complete();
+      controlsRef.current?.play();
 
       setTimeout(() => {
         setIsTransitioning(false);
@@ -253,19 +304,15 @@ export default function Features({
                           linePosition === "bottom" ? "bottom-0" : "top-0"
                         }`}
                       >
-                        <div
-                          className={`absolute left-0 ${
-                            linePosition === "bottom" ? "bottom-0" : "top-0"
-                          } h-full ${
-                            currentIndex === index ? "w-full" : "w-0"
-                          } origin-left bg-primary transition-all ease-linear dark:bg-white`}
-                          style={{
-                            transitionDuration:
-                              currentIndex === index
-                                ? `${collapseDelay}ms`
-                                : "0s",
-                          }}
-                        ></div>
+                        {currentIndex === index ? (
+                          <motion.div
+                            initial={{ width: "0%" }}
+                            className={`absolute left-0 ${
+                              linePosition === "bottom" ? "bottom-0" : "top-0"
+                            } h-full origin-left bg-primary transition-all ease-linear dark:bg-white`}
+                            style={{ width: progressWidth }}
+                          ></motion.div>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -294,6 +341,8 @@ export default function Features({
               <AnimatePresence mode="popLayout" custom={direction}>
                 {data[currentIndex]?.image ? (
                   <motion.img
+                    onMouseEnter={() => controlsRef.current?.pause()}
+                    onMouseLeave={() => controlsRef.current?.play()}
                     key={currentIndex}
                     src={data[currentIndex].image}
                     alt="feature"
@@ -331,41 +380,6 @@ export default function Features({
                 colorTo="hsl(var(--primary)/0)"
               />
             </div>
-
-            {/* <ul
-              ref={carouselRef}
-              className="flex h-full snap-x flex-nowrap overflow-x-auto py-10 [-ms-overflow-style:none] [-webkit-mask-image:linear-gradient(90deg,transparent,black_20%,white_80%,transparent)] [mask-image:linear-gradient(90deg,transparent,black_20%,white_80%,transparent)] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden snap-mandatory"
-              style={{
-                padding: "50px calc(50%)",
-              }}
-            >
-              {data.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="card relative mr-8 grid h-full max-w-60 shrink-0 items-start justify-center py-4 last:mr-0"
-                  onClick={() => setCurrentIndex(index)}
-                  style={{
-                    scrollSnapAlign: "center",
-                  }}
-                >
-                  <div className="absolute bottom-0 left-0 right-auto top-0 h-0.5 w-full overflow-hidden rounded-lg bg-neutral-300/50 dark:bg-neutral-300/30">
-                    <div
-                      className={`absolute left-0 top-0 h-full ${
-                        currentIndex === index ? "w-full" : "w-0"
-                      } origin-top bg-primary transition-all ease-linear dark:bg-white`}
-                      style={{
-                        transitionDuration:
-                          currentIndex === index ? `${collapseDelay}ms` : "0s",
-                      }}
-                    ></div>
-                  </div>
-                  <h2 className="text-xl font-bold">{item.title}</h2>
-                  <p className="mx-0 max-w-sm text-balance text-sm">
-                    {item.content}
-                  </p>
-                </div>
-              ))}
-            </ul> */}
           </div>
         </div>
       </div>

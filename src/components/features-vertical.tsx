@@ -102,7 +102,7 @@ export default function Features({
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   const [direction, setDirection] = useState<number>(1);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
-  const carouselTransitionDuration = 800;
+  const carouselTransitionDuration = 600;
   // const carouselRef = useRef<HTMLUListElement>(null);
   const ref = useRef(null);
   const isInView = useInView(ref, {
@@ -287,7 +287,7 @@ export default function Features({
               </Accordion.Root>
             </div>
             <div
-              className={`h-[350px] min-h-[200px] relative overflow-hidden w-auto  ${
+              className={`h-[350px] min-h-[200px] relative overflow-hidden rounded-xl w-auto  ${
                 ltr && "lg:order-1"
               }`}
             >
