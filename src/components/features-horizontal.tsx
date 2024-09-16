@@ -116,10 +116,10 @@ export default function Features({
   const carouselTransitionDuration = 800;
 
   const progress = useMotionValue(0);
-  useMotionValueEvent(progress, "change", (latestValue) => {
-    console.log(latestValue);
+  useMotionValueEvent(progress, "animationComplete", () => {
+    console.log("animationComplete");
   });
-  const progressWidth = useTransform(progress, [0, 100], ["0%", "100%"]);
+  const progressWidth = useTransform(progress, [0, 100], ["0%", "105%"]);
   // const carouselRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -130,7 +130,7 @@ export default function Features({
     });
 
     controlsRef.current = controls;
-  }, []);
+  }, [collapseDelay]);
 
   const ref = useRef(null);
   const isInView = useInView(ref, {
@@ -155,11 +155,13 @@ export default function Features({
   useMotionValueEvent(progress, "change", (latest) => {
     if (latest > 99 && !isAnimationCompleting) {
       setIsAnimationCompleting(true);
-      console.log("animationComplete");
+      // console.log("animationComplete");
 
       // Use setTimeout to ensure this runs after the current call stack is cleared
       setTimeout(() => {
-        progress.set(0);
+        controlsRef.current?.complete();
+        controlsRef.current?.play();
+
         setCurrentIndex((prevIndex) =>
           prevIndex !== undefined ? (prevIndex + 1) % data.length : 0
         );
