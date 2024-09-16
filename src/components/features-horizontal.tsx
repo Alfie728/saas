@@ -34,10 +34,7 @@ type AccordionItemProps = {
 const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
   ({ children, className, ...props }, forwardedRef) => (
     <Accordion.Item
-      className={cn(
-        "mt-px focus-within:relative focus-within:z-10",
-        className
-      )}
+      className={cn("mt-px focus-within:relative focus-within:z-10", className)}
       {...props}
       ref={forwardedRef}
     >
@@ -118,6 +115,7 @@ export default function Features({
   const progress = useMotionValue(0);
   const progressWidth = useTransform(progress, [0, 100], ["0%", "105%"]);
   const progressHeight = useTransform(progress, [0, 100], ["0%", "105%"]);
+  const [isAnimationCompleting, setIsAnimationCompleting] = useState(false);
   // useMotionValueEvent(progress, "change", (latest) => {
   //   console.log("latest", latest);
   //   console.log("progressWidth", progressWidth);
@@ -132,7 +130,8 @@ export default function Features({
     });
 
     controlsRef.current = controls;
-  }, [collapseDelay]);
+    return () => controls.stop();
+  }, [collapseDelay, progress]);
 
   const ref = useRef(null);
   const isInView = useInView(ref, {
@@ -151,8 +150,6 @@ export default function Features({
 
     return () => clearTimeout(timer);
   }, [isInView]);
-
-  const [isAnimationCompleting, setIsAnimationCompleting] = useState(false);
 
   useMotionValueEvent(progress, "change", (latest) => {
     if (latest > 99 && !isAnimationCompleting) {

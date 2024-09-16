@@ -32,10 +32,7 @@ type AccordionItemProps = {
 const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
   ({ children, className, ...props }, forwardedRef) => (
     <Accordion.Item
-      className={cn(
-        "mt-px focus-within:relative focus-within:z-10",
-        className
-      )}
+      className={cn("mt-px focus-within:relative focus-within:z-10", className)}
       {...props}
       ref={forwardedRef}
     >
@@ -128,7 +125,8 @@ export default function Features({
     });
 
     controlsRef.current = controls;
-  }, [collapseDelay]);
+    return () => controls.stop();
+  }, [collapseDelay, controlsRef, progress]);
 
   const isInView = useInView(ref, {
     once: true,
@@ -276,9 +274,9 @@ export default function Features({
                         {currentIndex === index ? (
                           <motion.div
                             initial={{ height: "0%" }}
-                          className={`absolute left-0 top-0 w-full origin-top bg-primary transition-all ease-linear dark:bg-white`}
-                          style={{
-                            height: progressHeight,
+                            className={`absolute left-0 top-0 w-full origin-top bg-primary transition-all ease-linear dark:bg-white`}
+                            style={{
+                              height: progressHeight,
                             }}
                           ></motion.div>
                         ) : null}
